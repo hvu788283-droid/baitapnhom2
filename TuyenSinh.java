@@ -1,19 +1,36 @@
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 
 public class TuyenSinh {
     private final ArrayList<ThiSinh> danhSach = new ArrayList<>();
 
     // Chuc nang 1: Them thi sinh
     public void themThiSinh(ThiSinh thiSinh) {
-        if (timTheoSoBaoDanh(thiSinh.getSoBaoDanh()) != null) {
-            System.out.println("So bao danh da ton tai!");
-            return;
-        }
-
-        danhSach.add(thiSinh);
-        System.out.println("Them thi sinh thanh cong!");
+    if (timTheoSoBaoDanh(thiSinh.getSoBaoDanh()) != null) {
+        System.out.println("So bao danh da ton tai!");
+        return;
     }
+
+    if (thiSinh.soBaoDanh.contains("|")
+            || thiSinh.hoTen.contains("|")
+            || thiSinh.diaChi.contains("|")) {
+        System.out.println("Thong tin khong duoc chua ky tu |");
+        return;
+    }
+
+    danhSach.add(thiSinh);
+
+    try {
+        luuDanhSach();
+        System.out.println("Da them va luu thi sinh vao file!");
+    } catch (IOException e) {
+        danhSach.remove(danhSach.size() - 1);
+        System.out.println("Khong them duoc vi loi luu file: " + e.getMessage());
+    }
+}
 
     // Chuc nang 2: Hien thi danh sach
     public void hienThiDanhSach() {
@@ -92,6 +109,97 @@ public class TuyenSinh {
 
         themThiSinh(thiSinh);
     }
+    import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+Trần
+private static final Path FILE_DANH_SACH = Paths.get("danhsach.txt");
+
+// Ghi danh sach vao file
+public void luuDanhSach() throws IOException {
+    try (BufferedWriter writer = Files.newBufferedWriter(
+            FILE_DANH_SACH, StandardCharsets.UTF_8)) {
+
+        for (ThiSinh ts : danhSach) {
+            writer.write(
+                ts.getKhoiThi() + "|" +
+                ts.soBaoDanh + "|" +
+                ts.hoTen + "|" +
+                ts.diaChi + "|" +
+                ts.mucUuTien
+            );
+            writer.newLine();
+        }
+    }
+}
+
+// Doc danh sach tu file
+public void docDanhSach() throws IOException {
+    if (!Files.exists(FILE_DANH_SACH)) {
+        return;
+    }
+
+    ArrayList<ThiSinh> duLieu = new ArrayList<>();
+
+    try (BufferedReader reader = Files.newBufferedReader(
+            FILE_DANH_SACH, StandardCharsets.UTF_8)) {
+
+        String dong;
+        int soDong = 0;
+
+        while ((dong = reader.readLine()) != null) {
+            soDong++;
+
+            if (dong.trim().isEmpty()) {
+                continue;
+            }
+
+            String[] p = dong.split("\\|", -1);
+
+            if (p.length != 5) {
+                throw new IOException("Sai dinh dang tai dong " + soDong);
+            }
+
+            int uuTien;
+            try {
+                uuTien = Integer.parseInt(p[4]);
+            } catch (NumberFormatException e) {
+                throw new IOException("Sai muc uu tien tai dong " + soDong);
+            }
+
+            if (uuTien < 0 || p[1].trim().isEmpty()
+                    || p[2].trim().isEmpty() || p[3].trim().isEmpty()) {
+                throw new IOException("Du lieu khong hop le tai dong " + soDong);
+            }
+
+            for (ThiSinh ts : duLieu) {
+                if (ts.getSoBaoDanh().equals(p[1])) {
+                    throw new IOException("Trung so bao danh tai dong " + soDong);
+                }
+            }
+
+            ThiSinh ts;
+            switch (p[0]) {
+                case "A":
+                    ts = new ThiSinhKhoiA(p[1], p[2], p[3], uuTien);
+                    break;
+                case "B":
+                    ts = new ThiSinhKhoiB(p[1], p[2], p[3], uuTien);
+                    break;
+                case "C":
+                    ts = new ThiSinhKhoiC(p[1], p[2], p[3], uuTien);
+                    break;
+                default:
+                    throw new IOException("Sai khoi thi tai dong " + soDong);
+            }
+
+            duLieu.add(ts);
+        }
+    }
+
+    danhSach.clear();
+    danhSach.addAll(duLieu);
+}
 
     // Chay chuong trinh
     public static void main(String[] args) {
